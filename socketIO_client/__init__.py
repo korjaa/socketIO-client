@@ -1,5 +1,5 @@
 import atexit
-
+from threading import Lock
 from .exceptions import ConnectionError, TimeoutError, PacketError
 from .heartbeats import HeartbeatThread
 from .logs import LoggingMixin
@@ -48,6 +48,7 @@ class EngineIO(LoggingMixin):
         self._opened = False
         self._wants_to_close = False
         atexit.register(self._close)
+        self._transport_lock = Lock()
 
         if Namespace:
             self.define(Namespace)
@@ -57,13 +58,16 @@ class EngineIO(LoggingMixin):
 
     @property
     def _transport(self):
-        if self._opened:
-            return self._transport_instance
-        self._engineIO_session = self._get_engineIO_session()
-        self._negotiate_transport()
-        self._connect_namespaces()
-        self._opened = True
-        self._reset_heartbeat()
+        self._transport_lock.acquire()
+        try:
+            if not self._opened and not self._wants_to_close:
+                self._engineIO_session = self._get_engineIO_session()
+                self._negotiate_transport()
+                self._connect_namespaces()
+                self._opened = True
+                self._reset_heartbeat()
+        finally:
+            self._transport_lock.release()
         return self._transport_instance
 
     def _get_engineIO_session(self):
@@ -194,15 +198,20 @@ class EngineIO(LoggingMixin):
         try:
             self._heartbeat_thread.halt()
             self._heartbeat_thread.join()
+            self._heartbeat_thread = None
         except AttributeError:
             pass
         if not hasattr(self, '_opened') or not self._opened:
+            self._http_session.close()
             return
         engineIO_packet_type = 1
         try:
             self._transport_instance.send_packet(engineIO_packet_type)
         except (TimeoutError, ConnectionError):
             pass
+        finally:
+            self._http_session.close()
+            self._transport_instance.disconnect()
         self._opened = False
 
     def _ping(self, engineIO_packet_data=''):
@@ -266,7 +275,8 @@ class EngineIO(LoggingMixin):
                     namespace.on_disconnect()
                 except PacketError:
                     pass
-        self._heartbeat_thread.relax()
+        if self._heartbeat_thread:
+            self._heartbeat_thread.relax()
         self._transport.set_timeout()
 
     def _should_stop_waiting(self):

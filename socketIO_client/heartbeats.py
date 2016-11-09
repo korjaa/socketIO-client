@@ -31,7 +31,8 @@ class HeartbeatThread(Thread):
                     interval_in_seconds = self._hurry_interval_in_seconds
                 else:
                     interval_in_seconds = self._relax_interval_in_seconds
-                self._rest.wait(interval_in_seconds)
+                if self._rest and hasattr(self._rest, 'wait'):
+                    self._rest.wait(interval_in_seconds)
         except ConnectionError:
             logging.debug('[heartbeat connection error]')
 
