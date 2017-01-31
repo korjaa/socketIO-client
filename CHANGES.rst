@@ -1,6 +1,8 @@
 0.7
 ---
 - Fixed thread cleanup
+- Fixed disconnect detection if defined directly thanks to Andreas Strikos
+- Fixed support for unicode payloads
 
 0.6
 ---
