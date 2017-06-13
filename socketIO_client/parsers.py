@@ -130,5 +130,5 @@ def _read_packet_length(content, content_index):
 def _read_packet_text(content, content_index, packet_length):
     while content.decode()[content_index] == ':':
         content_index += 1
-    packet_text = content[content_index:content_index + packet_length]
-    return content_index + packet_length, packet_text
+    packet_text = content.decode()[content_index:content_index + packet_length]
+    return content_index + packet_length, packet_text.encode()
