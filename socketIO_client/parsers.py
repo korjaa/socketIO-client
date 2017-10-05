@@ -121,9 +121,10 @@ def _make_packet_prefix(packet):
 
 
 def _read_packet_length(content, content_index):
+    start = content_index
     while content.decode()[content_index] != ':':
         content_index += 1
-    packet_length_string = content.decode()[0:content_index]
+    packet_length_string = content.decode()[start:content_index]
     return content_index, int(packet_length_string)
 
 
