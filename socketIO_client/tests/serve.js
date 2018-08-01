@@ -13,7 +13,7 @@ app.listen(9000);
 
 var io = require('socket.io')(app);
 var PAYLOAD = {'xxx': 'yyy'};
-var UNICODE_PAYLOAD = {'인삼': '뿌리'};
+var UNICODE_PAYLOAD = {'인삼': '★ 뿌리 ★'};
 
 // Travis currently does not support Buffer.from
 function getBuffer(array) {

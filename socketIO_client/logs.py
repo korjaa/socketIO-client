@@ -1,17 +1,15 @@
 import logging
 import time
+from invisibleroads_macros.log import get_log
 
-from .symmetries import NullHandler
 
-
-LOGGER = logging.getLogger('socketIO-client')
-LOGGER.addHandler(NullHandler())
+L = get_log('socketIO-client')
 
 
 class LoggingMixin(object):
 
     def _log(self, level, msg, *attrs):
-        LOGGER.log(level, '%s %s' % (self._log_name, msg), *attrs)
+        L.log(level, '%s %s' % (self._log_name, msg), *attrs)
 
     def _debug(self, msg, *attrs):
         self._log(logging.DEBUG, msg, *attrs)
