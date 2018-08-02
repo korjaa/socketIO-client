@@ -38,17 +38,27 @@ def encode_engineIO_content(engineIO_packets):
     return content
 
 
-def decode_engineIO_content(content):
+def decode_engineIO_content(content, bw_comp=False):
     content_index = 0
     content_length = len(content)
     while content_index < content_length:
         try:
-            content_index, packet_length = _read_packet_length(
-                content, content_index)
+            if bw_comp:
+                content_index, packet_length = _read_packet_length_bw_comp(
+                    content, content_index)
+            else:
+                content_index, packet_length = _read_packet_length(
+                    content, content_index)
         except IndexError:
             break
-        content_index, packet_text = _read_packet_text(
-            content, content_index, packet_length)
+
+        if bw_comp:
+            content_index, packet_text = _read_packet_text_bw_comp(
+                content, content_index, packet_length)
+        else:
+            content_index, packet_text = _read_packet_text(
+                content, content_index, packet_length)
+
         engineIO_packet_type, engineIO_packet_data = parse_packet_text(
             packet_text)
         yield engineIO_packet_type, engineIO_packet_data
@@ -128,8 +138,31 @@ def _read_packet_length(content, content_index):
     return content_index, int(packet_length_string)
 
 
+# Backwards compatible version to support socketIO protocol version 1.x
+def _read_packet_length_bw_comp(content, content_index):
+    while get_byte(content, content_index) != 0:
+        content_index += 1
+    content_index += 1
+    packet_length_string = ''
+    byte = get_byte(content, content_index)
+    while byte != 255:
+        packet_length_string += str(byte)
+        content_index += 1
+        byte = get_byte(content, content_index)
+    return content_index, int(packet_length_string)
+
+
 def _read_packet_text(content, content_index, packet_length):
     while content.decode()[content_index] == ':':
         content_index += 1
     packet_text = content.decode()[content_index:content_index + packet_length]
     return content_index + packet_length, packet_text.encode()
+
+
+# Backwards compatible version to support socketIO protocol version 1.x
+def _read_packet_text_bw_comp(content, content_index, packet_length):
+    while get_byte(content, content_index) == 255:
+        content_index += 1
+    packet_text = content[content_index:content_index + packet_length]
+    return content_index + packet_length, packet_text
+

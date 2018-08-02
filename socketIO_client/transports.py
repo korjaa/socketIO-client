@@ -75,6 +75,7 @@ class XHR_PollingTransport(AbstractTransport):
         self._http_url = '%s://%s/' % (http_scheme, url)
         self._request_index_lock = threading.Lock()
         self._send_packet_lock = threading.Lock()
+        self.bw_comp = False
 
     def recv_packet(self):
         params = dict(self._params)
@@ -84,9 +85,18 @@ class XHR_PollingTransport(AbstractTransport):
             self._http_url,
             params=params,
             **self._kw_get)
-        for engineIO_packet in decode_engineIO_content(response.content):
-            engineIO_packet_type, engineIO_packet_data = engineIO_packet
-            yield engineIO_packet_type, engineIO_packet_data
+        try:
+            for engineIO_packet in decode_engineIO_content(response.content, self.bw_comp):
+                engineIO_packet_type, engineIO_packet_data = engineIO_packet
+                yield engineIO_packet_type, engineIO_packet_data
+        except UnicodeDecodeError as error:
+            if self.bw_comp:
+                raise error
+
+            self.bw_comp = True
+            for engineIO_packet in decode_engineIO_content(response.content, self.bw_comp):
+                engineIO_packet_type, engineIO_packet_data = engineIO_packet
+                yield engineIO_packet_type, engineIO_packet_data
 
     def send_packet(self, engineIO_packet_type, engineIO_packet_data=''):
         with self._send_packet_lock:
