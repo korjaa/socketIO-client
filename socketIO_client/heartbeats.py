@@ -1,10 +1,7 @@
-from invisibleroads_macros.log import get_log
+import logging
 from threading import Thread, Event
 
 from .exceptions import ConnectionError, TimeoutError
-
-
-L = get_log(__name__)
 
 
 class HeartbeatThread(Thread):
@@ -37,7 +34,7 @@ class HeartbeatThread(Thread):
                 if self._rest and hasattr(self._rest, 'wait'):
                     self._rest.wait(interval_in_seconds)
         except ConnectionError:
-            L.debug('[heartbeat connection error]')
+            logging.debug('[heartbeat connection error]')
 
     def relax(self):
         self._adrenaline.clear()

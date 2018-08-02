@@ -1,3 +1,14 @@
+try:
+    from logging import NullHandler
+except ImportError:  # Python 2.6
+    from logging import Handler
+
+    class NullHandler(Handler):
+
+        def emit(self, record):
+            pass
+
+
 from six import indexbytes
 
 
