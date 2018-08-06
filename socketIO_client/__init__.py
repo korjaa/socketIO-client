@@ -247,7 +247,8 @@ class EngineIO(LoggingMixin):
     def wait(self, seconds=None, **kw):
         'Wait in a loop and react to events as defined in the namespaces'
         # Use ping/pong to unblock recv for polling transport
-        self._heartbeat_thread.hurry()
+        if not self._should_stop_waiting(**kw):
+            self._heartbeat_thread.hurry()
         # Use timeout to unblock recv for websocket transport
         self._transport.set_timeout(seconds=1)
         # Listen

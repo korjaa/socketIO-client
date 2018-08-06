@@ -6,8 +6,8 @@ python:
 before_install:
   - sudo apt-get install nodejs; node --version
 install:
-  - pip install -U coverage requests six websocket-client
-  - npm install -G socket.io
+  - pip install -U coverage requests six websocket-client==0.37.0 nose
+  - npm install -G socket.io@1.7.2
 before_script:
   - DEBUG=* node socketIO_client/tests/serve.js &
   - sleep 1
