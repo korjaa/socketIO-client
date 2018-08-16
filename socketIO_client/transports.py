@@ -160,7 +160,7 @@ class WebsocketTransport(AbstractTransport):
 
         if packet_text:
             if not isinstance(packet_text, six.binary_type):
-                packet_text = six.b(packet_text)
+                packet_text = packet_text.encode('utf-8')
             engineIO_packet_type, engineIO_packet_data = parse_packet_text(
                 packet_text)
             yield engineIO_packet_type, engineIO_packet_data
