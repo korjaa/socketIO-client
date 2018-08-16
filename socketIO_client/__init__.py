@@ -58,17 +58,18 @@ class EngineIO(LoggingMixin):
 
     @property
     def _transport(self):
-        self._transport_lock.acquire()
         try:
+            self._transport_lock.acquire()
             if not self._opened and not self._wants_to_close:
                 self._engineIO_session = self._get_engineIO_session()
                 self._negotiate_transport()
                 self._connect_namespaces()
                 self._opened = True
                 self._reset_heartbeat()
+
+            return self._transport_instance
         finally:
             self._transport_lock.release()
-        return self._transport_instance
 
     def _get_engineIO_session(self):
         warning_screen = self._yield_warning_screen()
@@ -408,13 +409,13 @@ class SocketIO(EngineIO):
     # Act
 
     def connect(self, path='', with_transport_instance=False):
+        self._wants_to_close = False
         if path or not self.connected:
             socketIO_packet_type = 0
             socketIO_packet_data = format_socketIO_packet_data(path)
             self._message(
                 str(socketIO_packet_type) + socketIO_packet_data,
                 with_transport_instance)
-        self._wants_to_close = False
 
     def disconnect(self, path=''):
         if path and self._opened:
