@@ -11,7 +11,7 @@ DESCRIPTION = '\n\n'.join(LOAD_TEXT(_) for _ in [
 ])
 setup(
     name='socketIO-client',
-    version='0.7.1-1',
+    version='0.7.2',
     description='A socket.io client library',
     long_description=DESCRIPTION,
     license='MIT',
@@ -28,7 +28,7 @@ setup(
     install_requires=[
         'requests>=2.7.0',
         'six',
-        'websocket-client==0.37.0'
+        'websocket-client'
     ],
     tests_require=[
         'nose',

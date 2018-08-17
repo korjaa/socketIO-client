@@ -16,7 +16,7 @@ from .transports import (
 
 
 __all__ = 'SocketIO', 'SocketIONamespace'
-__version__ = '0.7.0'
+__version__ = '0.7.2'
 BaseNamespace = SocketIONamespace
 LoggingNamespace = LoggingSocketIONamespace
 
@@ -58,17 +58,18 @@ class EngineIO(LoggingMixin):
 
     @property
     def _transport(self):
-        self._transport_lock.acquire()
         try:
+            self._transport_lock.acquire()
             if not self._opened and not self._wants_to_close:
                 self._engineIO_session = self._get_engineIO_session()
                 self._negotiate_transport()
                 self._connect_namespaces()
                 self._opened = True
                 self._reset_heartbeat()
+
+            return self._transport_instance
         finally:
             self._transport_lock.release()
-        return self._transport_instance
 
     def _get_engineIO_session(self):
         warning_screen = self._yield_warning_screen()
@@ -273,7 +274,7 @@ class EngineIO(LoggingMixin):
                     self._warn(warning)
                 try:
                     namespace = self.get_namespace()
-                    namespace.on_disconnect()
+                    namespace._find_packet_callback('disconnect')()
                 except PacketError:
                     pass
         if self._heartbeat_thread:
@@ -345,7 +346,7 @@ class SocketIO(EngineIO):
     - Pass query params, headers, cookies, proxies as keyword arguments.
 
     SocketIO(
-        'localhost', 8000,
+        '127.0.0.1', 8000,
         params={'q': 'qqq'},
         headers={'Authorization': 'Basic ' + b64encode('username:password')},
         cookies={'a': 'aaa'},
@@ -353,7 +354,7 @@ class SocketIO(EngineIO):
     """
 
     def __init__(
-            self, host, port=None, Namespace=SocketIONamespace,
+            self, host='127.0.0.1', port=None, Namespace=SocketIONamespace,
             wait_for_connection=True, transports=TRANSPORTS,
             resource='socket.io', hurry_interval_in_seconds=1, **kw):
         self._namespace_by_path = {}
@@ -407,26 +408,30 @@ class SocketIO(EngineIO):
 
     # Act
 
-    def connect(self, path, with_transport_instance=False):
-        socketIO_packet_type = 0
-        socketIO_packet_data = format_socketIO_packet_data(path)
-        self._message(
-            str(socketIO_packet_type) + socketIO_packet_data,
-            with_transport_instance)
+    def connect(self, path='', with_transport_instance=False):
+        self._wants_to_close = False
+        if path or not self.connected:
+            socketIO_packet_type = 0
+            socketIO_packet_data = format_socketIO_packet_data(path)
+            self._message(
+                str(socketIO_packet_type) + socketIO_packet_data,
+                with_transport_instance)
 
     def disconnect(self, path=''):
-        if not path or not self._opened:
-            self._close()
-        elif path:
+        if path and self._opened:
             socketIO_packet_type = 1
             socketIO_packet_data = format_socketIO_packet_data(path)
             try:
                 self._message(str(socketIO_packet_type) + socketIO_packet_data)
             except (TimeoutError, ConnectionError):
                 pass
+        elif not path:
+            self._close()
         try:
-            namespace = self._namespace_by_path.pop(path)
-            namespace.on_disconnect()
+            namespace = self._namespace_by_path[path]
+            namespace._find_packet_callback('disconnect')()
+            if path:
+                del self._namespace_by_path[path]
         except KeyError:
             pass
 
