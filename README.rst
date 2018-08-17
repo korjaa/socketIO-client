@@ -1,5 +1,5 @@
-.. image:: https://travis-ci.org/invisibleroads/socketIO-client.svg?branch=master
-    :target: https://travis-ci.org/invisibleroads/socketIO-client
+.. image:: https://travis-ci.org/armmbed/socketIO-client.svg?branch=master
+    :target: https://travis-ci.org/armmbed/socketIO-client
 
 
 socketIO-client
