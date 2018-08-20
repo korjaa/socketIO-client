@@ -21,6 +21,7 @@ yes | pip uninstall websocket websocket-client
 pip install -U websocket-client""")
 
 from .exceptions import ConnectionError, TimeoutError
+from .logs import LoggingMixin
 from .parsers import (
     encode_engineIO_content, decode_engineIO_content,
     format_packet_text, parse_packet_text)
@@ -31,7 +32,7 @@ ENGINEIO_PROTOCOL = 3
 TRANSPORTS = 'xhr-polling', 'websocket'
 
 
-class AbstractTransport(object):
+class AbstractTransport(LoggingMixin):
 
     def __init__(self, http_session, is_secure, url, engineIO_session=None):
         self.http_session = http_session
@@ -57,6 +58,7 @@ class XHR_PollingTransport(AbstractTransport):
     def __init__(self, http_session, is_secure, url, engineIO_session=None):
         super(XHR_PollingTransport, self).__init__(
             http_session, is_secure, url, engineIO_session)
+        self._log_name = "XHR_PollingTransport"
         self._params = {
             'EIO': ENGINEIO_PROTOCOL, 'transport': 'polling'}
         if engineIO_session:
@@ -75,7 +77,7 @@ class XHR_PollingTransport(AbstractTransport):
         self._http_url = '%s://%s/' % (http_scheme, url)
         self._request_index_lock = threading.Lock()
         self._send_packet_lock = threading.Lock()
-        self.bw_comp = False
+        self._bw_comp = False
 
     def recv_packet(self):
         params = dict(self._params)
@@ -86,15 +88,16 @@ class XHR_PollingTransport(AbstractTransport):
             params=params,
             **self._kw_get)
         try:
-            for engineIO_packet in decode_engineIO_content(response.content, self.bw_comp):
+            for engineIO_packet in decode_engineIO_content(response.content, self._bw_comp):
                 engineIO_packet_type, engineIO_packet_data = engineIO_packet
                 yield engineIO_packet_type, engineIO_packet_data
         except UnicodeDecodeError as error:
-            if self.bw_comp:
+            if self._bw_comp:
                 raise error
 
-            self.bw_comp = True
-            for engineIO_packet in decode_engineIO_content(response.content, self.bw_comp):
+            self._info('Failed to decode packet, dropping to socketIO 1.x')
+            self._bw_comp = True
+            for engineIO_packet in decode_engineIO_content(response.content, self._bw_comp):
                 engineIO_packet_type, engineIO_packet_data = engineIO_packet
                 yield engineIO_packet_type, engineIO_packet_data
 
@@ -125,6 +128,7 @@ class WebsocketTransport(AbstractTransport):
     def __init__(self, http_session, is_secure, url, engineIO_session=None):
         super(WebsocketTransport, self).__init__(
             http_session, is_secure, url, engineIO_session)
+        self._log_name = "WebsocketTransport"
         params = dict(http_session.params, **{
             'EIO': ENGINEIO_PROTOCOL, 'transport': 'websocket'})
         request = http_session.prepare_request(requests.Request('GET', url))
