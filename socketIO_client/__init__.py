@@ -395,6 +395,7 @@ class SocketIO(EngineIO):
         # Proper solution would require comprehensive rewrite.
         for packet in self.open_extra_packets:
             self._process_packet(packet)
+        self.open_extra_packets = []
 
     def __exit__(self, *exception_pack):
         self.disconnect()
