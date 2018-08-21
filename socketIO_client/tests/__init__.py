@@ -62,6 +62,7 @@ class BaseMixin(object):
 
     def test_reconnect_with_namespace(self):
         'Reconnect with namespace'
+        self.socketIO.disconnect()
         namespace = self.socketIO.define(Namespace)
         self.assertFalse('reconnect' in namespace.args_by_event)
         self.socketIO.connect()

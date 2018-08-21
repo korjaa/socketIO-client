@@ -132,9 +132,9 @@ def _make_packet_prefix(packet):
 
 def _read_packet_length(content, content_index):
     start = content_index
-    while content.decode()[content_index] != ':':
+    while content.decode('utf-8')[content_index] != ':':
         content_index += 1
-    packet_length_string = content.decode()[start:content_index]
+    packet_length_string = content.decode('utf-8')[start:content_index]
     return content_index, int(packet_length_string)
 
 
@@ -153,10 +153,10 @@ def _read_packet_length_bw_comp(content, content_index):
 
 
 def _read_packet_text(content, content_index, packet_length):
-    while content.decode()[content_index] == ':':
+    while content.decode('utf-8')[content_index] == ':':
         content_index += 1
-    packet_text = content.decode()[content_index:content_index + packet_length]
-    return content_index + packet_length, packet_text.encode()
+    packet_text = content.decode('utf-8')[content_index:content_index + packet_length]
+    return content_index + packet_length, packet_text.encode('utf-8')
 
 
 # Backwards compatible version to support socketIO protocol version 1.x

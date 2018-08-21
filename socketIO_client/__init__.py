@@ -84,6 +84,7 @@ class EngineIO(LoggingMixin):
                     if session is None:
                         assert engineIO_packet_type == 0 # engineIO_packet_type == open
                         session = parse_engineIO_session(engineIO_packet_data)
+                        continue
 
                     remaining_packets.append((engineIO_packet_type, engineIO_packet_data))
                 break
