@@ -266,6 +266,11 @@ class EngineIO(LoggingMixin):
                     self._close()
                     raise
             except ConnectionError as e:
+                # EAGAIN or EWOULDBLOCK
+                # Ignore this error and just try again.
+                if 'Errno 11' in str(e):
+                    continue
+
                 self._opened = False
                 try:
                     warning = Exception('[connection error] %s' % e)
