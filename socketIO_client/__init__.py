@@ -49,6 +49,7 @@ class EngineIO(LoggingMixin):
         self._wants_to_close = False
         atexit.register(self._close)
         self._transport_lock = Lock()
+        self.open_extra_packets = []
 
         if Namespace:
             self.define(Namespace)
@@ -61,7 +62,7 @@ class EngineIO(LoggingMixin):
         try:
             self._transport_lock.acquire()
             if not self._opened and not self._wants_to_close:
-                self._engineIO_session = self._get_engineIO_session()
+                self._engineIO_session, self.open_extra_packets = self._get_engineIO_session()
                 self._negotiate_transport()
                 self._connect_namespaces()
                 self._opened = True
@@ -73,12 +74,18 @@ class EngineIO(LoggingMixin):
 
     def _get_engineIO_session(self):
         warning_screen = self._yield_warning_screen()
+        session = None
+        remaining_packets = []
         for elapsed_time in warning_screen:
             transport = XHR_PollingTransport(
                 self._http_session, self._is_secure, self._url)
             try:
-                engineIO_packet_type, engineIO_packet_data = next(
-                    transport.recv_packet())
+                for engineIO_packet_type, engineIO_packet_data in transport.recv_packet():
+                    if session is None:
+                        assert engineIO_packet_type == 0 # engineIO_packet_type == open
+                        session = parse_engineIO_session(engineIO_packet_data)
+
+                    remaining_packets.append((engineIO_packet_type, engineIO_packet_data))
                 break
             except (TimeoutError, ConnectionError) as e:
                 if not self._wait_for_connection:
@@ -86,8 +93,8 @@ class EngineIO(LoggingMixin):
                 warning = Exception(
                     '[engine.io waiting for connection] %s' % e)
                 warning_screen.throw(warning)
-        assert engineIO_packet_type == 0  # engineIO_packet_type == open
-        return parse_engineIO_session(engineIO_packet_data)
+
+        return session, remaining_packets
 
     def _negotiate_transport(self):
         self._transport_instance = self._get_transport('xhr-polling')
@@ -375,6 +382,14 @@ class SocketIO(EngineIO):
             namespace._transport = self._transport_instance
             if path:
                 self.connect(path, with_transport_instance=True)
+
+        # Dirty way to handle changed socketio sequence where along with
+        # open packet can come other packets. In 1.x versions open was
+        # always a single packet. With 2.x it is possible that the first
+        # XHR response can contain other packets along with open.
+        # Proper solution would require comprehensive rewrite.
+        for packet in self.open_extra_packets:
+            self._process_packet(packet)
 
     def __exit__(self, *exception_pack):
         self.disconnect()
