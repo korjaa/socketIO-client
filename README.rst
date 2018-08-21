@@ -158,7 +158,9 @@ Define different namespaces on a single socket. ::
     news_namespace.emit('aaa')
     socketIO.wait(seconds=1)
 
-Connect via SSL (https://github.com/invisibleroads/socketIO-client/issues/54). ::
+Connect via SSL (https://github.com/invisibleroads/socketIO-client/issues/54).
+Reliable connection using websocket transport over SSL requires openSSL
+version 1.0.2h or newer ::
 
     from socketIO_client import SocketIO
 

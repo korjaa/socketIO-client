@@ -133,6 +133,7 @@ class WebsocketTransport(AbstractTransport):
             'EIO': ENGINEIO_PROTOCOL, 'transport': 'websocket'})
         request = http_session.prepare_request(requests.Request('GET', url))
         kw = {'header': ['%s: %s' % x for x in request.headers.items()]}
+        kw['enable_multithread'] = True
         if engineIO_session:
             params['sid'] = engineIO_session.id
             kw['timeout'] = self._timeout = engineIO_session.ping_timeout
