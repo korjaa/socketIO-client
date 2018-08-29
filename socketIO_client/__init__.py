@@ -16,7 +16,7 @@ from .transports import (
 
 
 __all__ = 'SocketIO', 'SocketIONamespace'
-__version__ = '0.7.2'
+__version__ = '0.7.6'
 BaseNamespace = SocketIONamespace
 LoggingNamespace = LoggingSocketIONamespace
 
@@ -266,11 +266,6 @@ class EngineIO(LoggingMixin):
                     self._close()
                     raise
             except ConnectionError as e:
-                # EAGAIN or EWOULDBLOCK
-                # Ignore this error and just try again.
-                if 'Errno 11' in str(e):
-                    continue
-
                 self._opened = False
                 try:
                     warning = Exception('[connection error] %s' % e)

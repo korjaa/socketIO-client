@@ -11,7 +11,7 @@ DESCRIPTION = '\n\n'.join(LOAD_TEXT(_) for _ in [
 ])
 setup(
     name='socketIO-client',
-    version='0.7.5',
+    version='0.7.6',
     description='A socket.io client library',
     long_description=DESCRIPTION,
     license='MIT',
@@ -25,10 +25,13 @@ setup(
     author='Roy Hyunjin Han',
     author_email='rhh@crosscompute.com',
     url='https://github.com/invisibleroads/socketIO-client',
+    dependency_links=[
+        'git+https://github.com/ARMmbed/websocket-client@v0.51.0-1#egg=websocket-client-0.51.0-1'
+    ],
     install_requires=[
         'requests>=2.7.0',
         'six',
-        'websocket-client>=0.49.0'
+        'websocket-client==0.51.0-1'
     ],
     tests_require=[
         'nose',
