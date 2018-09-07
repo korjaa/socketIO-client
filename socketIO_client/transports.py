@@ -89,17 +89,15 @@ class XHR_PollingTransport(AbstractTransport):
             **self._kw_get)
         try:
             for engineIO_packet in decode_engineIO_content(response.content, self._bw_comp):
-                engineIO_packet_type, engineIO_packet_data = engineIO_packet
-                yield engineIO_packet_type, engineIO_packet_data
-        except UnicodeDecodeError as error:
+                yield engineIO_packet
+        except UnicodeDecodeError:
             if self._bw_comp:
-                raise error
+                raise
 
             self._info('Failed to decode packet, dropping to socketIO 1.x')
             self._bw_comp = True
             for engineIO_packet in decode_engineIO_content(response.content, self._bw_comp):
-                engineIO_packet_type, engineIO_packet_data = engineIO_packet
-                yield engineIO_packet_type, engineIO_packet_data
+                yield engineIO_packet
 
     def send_packet(self, engineIO_packet_type, engineIO_packet_data=''):
         with self._send_packet_lock:
