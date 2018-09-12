@@ -246,10 +246,12 @@ class EngineIO(LoggingMixin):
     # React
 
     def wait(self, seconds=None, **kw):
-        'Wait in a loop and react to events as defined in the namespaces'
+        # Wait in a loop and react to events as defined in the namespaces
+        if self._should_stop_waiting(**kw):
+            # no need to wait when should stop
+            return
         # Use ping/pong to unblock recv for polling transport
-        if not self._should_stop_waiting(**kw):
-            self._heartbeat_thread.hurry()
+        self._heartbeat_thread.hurry()
         # Use timeout to unblock recv for websocket transport
         self._transport.set_timeout(seconds=1)
         # Listen
@@ -279,7 +281,11 @@ class EngineIO(LoggingMixin):
                     pass
         if self._heartbeat_thread:
             self._heartbeat_thread.relax()
-        self._transport.set_timeout()
+        try:
+            self._transport.set_timeout()
+        except ConnectionError:
+            if not self._should_stop_waiting(**kw):
+                raise
 
     def _should_stop_waiting(self):
         return self._wants_to_close

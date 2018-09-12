@@ -4,6 +4,7 @@ import ssl
 from threading import Lock
 import threading
 import time
+import errno
 from six.moves.urllib.parse import urlencode as format_query
 from six.moves.urllib.parse import urlparse as parse_url
 from socket import error as SocketError
@@ -179,7 +180,14 @@ class WebsocketTransport(AbstractTransport):
             self.lock.release()
 
     def set_timeout(self, seconds=None):
-        self._connection.settimeout(seconds or self._timeout)
+        try:
+            self._connection.settimeout(seconds or self._timeout)
+        except AttributeError as error:
+            raise ConnectionError(str(error))
+        except SocketError as error:
+            if error.errno == errno.EBADF:
+                raise ConnectionError(str(error))
+            raise
 
     def disconnect(self):
         self._connection.close()
